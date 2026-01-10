@@ -1,33 +1,14 @@
-import { useState, useEffect } from 'react';
-import NavBar from './components/NavBar';
-import ChatWindow from './components/ChatWindow';
-import FileManager from './components/FileManager';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import Auth from './components/Auth';
+import ReviewerDashboard from './pages/ReviewerDashboard';
+import AuthorDashboard from './pages/AuthorDashboard';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+function AppContent() {
+  const { logout, isLoading, isAuthenticated, user } = useAuth();
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
-  }, []);
-
-  const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userId');
-    setIsAuthenticated(false);
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
         <div className="text-center">
@@ -38,30 +19,51 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Auth onLoginSuccess={handleLoginSuccess} />;
-  }
-
   return (
-    // The Main Grid Layout: 260px Sidebar | Flexible Middle | 320px Right Sidebar
-    <div className="grid grid-cols-[260px_1fr_320px] h-screen w-full overflow-hidden">
-      
-      {/* Left Column */}
-      <aside className="h-full">
-        <NavBar onLogout={handleLogout} />
-      </aside>
+    <Routes>
+      <Route 
+        path="/auth" 
+        element={isAuthenticated ? <Navigate to="/" replace /> : <Auth />} 
+      />
+      <Route 
+        path="/reviewer/*" 
+        element={
+          <ProtectedRoute requiredRole="reviewer">
+            <ReviewerDashboard onLogout={logout} />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/author/*" 
+        element={
+          <ProtectedRoute requiredRole="user">
+            <AuthorDashboard onLogout={logout} />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/" 
+        element={
+          isAuthenticated ? 
+            <Navigate to={user?.role === 'user' ? '/author' : '/reviewer'} replace /> : 
+            <Navigate to="/auth" replace />
+        } 
+      />
+      <Route 
+        path="*" 
+        element={<Navigate to="/" replace />} 
+      />
+    </Routes>
+  );
+}
 
-      {/* Middle Column */}
-      <main className="h-full overflow-hidden">
-        <ChatWindow />
-      </main>
-
-      {/* Right Column */}
-      <aside className="h-full">
-        <FileManager />
-      </aside>
-
-    </div>
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
 

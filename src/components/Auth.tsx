@@ -1,25 +1,21 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Mail, Lock, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, User, UserCheck } from 'lucide-react';
+import { useAuth, type UserRole } from '../contexts/AuthContext';
 
 // Configure axios to send cookies with requests
 axios.defaults.withCredentials = true;
 
-interface AuthProps {
-  onLoginSuccess: (token: string, userId: string) => void;
-}
+const API_BACKEND_URL = import.meta.env.VITE_API_BACKEND_URL;
 
-// Helper function to set cookie
-const setCookie = (name: string, value: string, days: number = 7) => {
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-};
-
-export default function Auth({ onLoginSuccess }: AuthProps) {
+export default function Auth() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>('reviewer');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -42,7 +38,7 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
       if (isLogin) {
         // Login
         const response = await axios.post(
-          '/api/auth/user/login',
+          `${API_BACKEND_URL}/inf/api/auth/${userRole}/login`,
           {
             email: formData.email,
             password: formData.password,
@@ -56,18 +52,25 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
           return;
         }
 
-        // Extract token and userId from the actual response structure
+        // Extract token from the response structure
         const token = response.data.accessToken;
-        const userId = response.data.user?.uniqueId;
+        const userId = response.data.user?.uniqueId || response.data.userId;
+        const userName = response.data.user?.name || response.data.name;
 
-        if (token && userId) {
-          // Store token as cookie for server-side authentication
-          setCookie('authToken', token, 7);
-          localStorage.setItem('userId', userId);
-          console.log('Login successful, token stored in cookie, redirecting...');
-          onLoginSuccess(token, userId);
+        if (token) {
+          console.log('Login successful, redirecting...');
+          login({
+            id: userId,
+            email: formData.email,
+            name: userName,
+            role: userRole,
+            token: token
+          });
+          
+          // Navigate based on user role
+          navigate(userRole === 'user' ? '/author' : '/reviewer');
         } else {
-          setError('Login successful but missing token or user ID in response');
+          setError('Login successful but missing token in response');
           console.error('Full response structure:', JSON.stringify(response.data, null, 2));
         }
       } else {
@@ -79,7 +82,7 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
         }
 
         const response = await axios.post(
-          '/api/auth/user/register',
+          `${API_BACKEND_URL}/inf/api/auth/${userRole}/register`,
           {
             name: formData.name,
             email: formData.email,
@@ -94,18 +97,24 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
           return;
         }
 
-        // Extract token and userId from the actual response structure
-        const token = response.data.accessToken;
-        const userId = response.data.user?.uniqueId;
+        // Extract token from the response structure
+        const token = response.data.token;
+        const userId = response.data.user?.id || response.data.userId;
 
-        if (token && userId) {
-          // Store token as cookie for server-side authentication
-          setCookie('authToken', token, 7);
-          localStorage.setItem('userId', userId);
-          console.log('Registration successful, token stored in cookie, redirecting...');
-          onLoginSuccess(token, userId);
+        if (token) {
+          console.log('Registration successful, redirecting...');
+          login({
+            id: userId,
+            email: formData.email,
+            name: formData.name,
+            role: userRole,
+            token: token
+          });
+          
+          // Navigate based on user role
+          navigate(userRole === 'user' ? '/author' : '/reviewer');
         } else {
-          setError('Registration successful but missing token or user ID in response');
+          setError('Registration successful but missing token in response');
           console.error('Full response structure:', JSON.stringify(response.data, null, 2));
         }
       }
@@ -140,6 +149,43 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* User Role Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">I am a</label>
+            <div className="flex space-x-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setUserRole('reviewer');
+                  setError(null);
+                }}
+                className={`flex-1 flex items-center justify-center px-4 py-2 rounded-lg border transition ${
+                  userRole === 'reviewer'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <UserCheck className="mr-2" size={16} />
+                Reviewer
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUserRole('user');
+                  setError(null);
+                }}
+                className={`flex-1 flex items-center justify-center px-4 py-2 rounded-lg border transition ${
+                  userRole === 'user'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <User className="mr-2" size={16} />
+                Author
+              </button>
+            </div>
+          </div>
+
           {!isLogin && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
