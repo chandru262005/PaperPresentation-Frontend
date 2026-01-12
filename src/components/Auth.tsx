@@ -38,7 +38,7 @@ export default function Auth() {
       if (isLogin) {
         // Login
         const response = await axios.post(
-          `${API_BACKEND_URL}/inf/api/auth/${userRole}/login`,
+          `${API_BACKEND_URL}/api/auth/${userRole}/login`,
           {
             email: formData.email,
             password: formData.password,
@@ -82,7 +82,7 @@ export default function Auth() {
         }
 
         const response = await axios.post(
-          `${API_BACKEND_URL}/inf/api/auth/${userRole}/register`,
+          `${API_BACKEND_URL}/api/auth/${userRole}/register`,
           {
             name: formData.name,
             email: formData.email,

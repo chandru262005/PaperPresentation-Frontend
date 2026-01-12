@@ -40,7 +40,7 @@ export default function FileManager() {
         formData.append('paperId', new URLSearchParams(window.location.search).get('paperId') || 'PRP01');
 
         const response = await axios.post(
-          `${API_BASE_URL}/inf/api/events/paper/upload-file`,
+          `${API_BASE_URL}/inf/api/events/papers/upload-file`,
           formData
         );
 

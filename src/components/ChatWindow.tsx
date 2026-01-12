@@ -27,7 +27,7 @@ export default function ChatWindow() {
 
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/inf/api/events/paper/${user.role}/chats`);
+        const response = await axios.get(`${API_BASE_URL}/api/events/papers/${user?.role}/chats`);
         console.log(response);
         if (response.data.success) {
           setChatRooms(response.data.chats || []);

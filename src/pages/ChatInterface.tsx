@@ -39,7 +39,7 @@ export default function ChatInterface({ chatRooms }: ChatInterfaceProps) {
         setMessages([]);
         
         const response = await axios.get(
-          `${API_BASE_URL}/inf/api/events/paper/chats/messages/${selectedChatRoom._id}`
+          `${API_BASE_URL}/api/events/papers/${user?.role}/chats/messages/${selectedChatRoom._id}`
         );
         console.log(response);
         if (response.data.success) {
@@ -80,7 +80,7 @@ export default function ChatInterface({ chatRooms }: ChatInterfaceProps) {
 
       // Send message to backend
       const response = await axios.post(
-        `${API_BASE_URL}/inf/api/events/paper/${user.role}/chats/messages/${selectedChatRoom._id}`,
+        `${API_BASE_URL}/api/events/papers/${user.role}/chats/messages/${selectedChatRoom._id}`,
         {
           ReviewerId,
           message: currentInput,
